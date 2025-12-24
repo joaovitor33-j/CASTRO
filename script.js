@@ -19,8 +19,8 @@ function registrarEntrada() {
 
   registros.push({
     nome,
-    data: agora.toLocaleDateString(),
-    entrada: agora.toLocaleTimeString(),
+    data: agora.toISOString().split("T")[0], // yyyy-mm-dd
+    entrada: agora.getTime(), // timestamp
     saida: "",
     horas: ""
   });
@@ -37,11 +37,11 @@ function registrarSaida() {
 
   for (let i = registros.length - 1; i >= 0; i--) {
     if (registros[i].nome === nome && registros[i].saida === "") {
-      const saida = new Date();
-      registros[i].saida = saida.toLocaleTimeString();
+      const agora = new Date();
+      registros[i].saida = agora.getTime();
 
-      const entradaHora = new Date(`${registros[i].data} ${registros[i].entrada}`);
-      registros[i].horas = ((saida - entradaHora) / (1000 * 60 * 60)).toFixed(2);
+      const totalMs = registros[i].saida - registros[i].entrada;
+      registros[i].horas = (totalMs / (1000 * 60 * 60)).toFixed(2);
 
       salvar();
       return;
@@ -63,8 +63,8 @@ function carregarTabela() {
       <tr>
         <td>${r.nome}</td>
         <td>${r.data}</td>
-        <td>${r.entrada}</td>
-        <td>${r.saida}</td>
+        <td>${new Date(r.entrada).toLocaleTimeString()}</td>
+        <td>${r.saida ? new Date(r.saida).toLocaleTimeString() : ""}</td>
         <td>${r.horas}</td>
         <td class="acao">
           <button class="editar" onclick="editarRegistro(${index})">✏️</button>
@@ -84,20 +84,35 @@ function editarRegistro(index) {
   const nome = prompt("Nome:", r.nome);
   if (nome === null) return;
 
-  const entrada = prompt("Entrada (HH:MM:SS):", r.entrada);
+  const entradaAtual = new Date(r.entrada).toLocaleTimeString().slice(0, 5);
+  const entrada = prompt("Entrada (HH:MM):", entradaAtual);
   if (entrada === null) return;
 
-  const saida = prompt("Saída (HH:MM:SS):", r.saida);
+  const saidaAtual = r.saida
+    ? new Date(r.saida).toLocaleTimeString().slice(0, 5)
+    : "";
+  const saida = prompt("Saída (HH:MM):", saidaAtual);
   if (saida === null) return;
 
   r.nome = nome;
-  r.entrada = entrada;
-  r.saida = saida;
 
-  if (entrada && saida) {
-    const entradaHora = new Date(`${r.data} ${entrada}`);
-    const saidaHora = new Date(`${r.data} ${saida}`);
-    r.horas = ((saidaHora - entradaHora) / (1000 * 60 * 60)).toFixed(2);
+  if (entrada) {
+    const [h, m] = entrada.split(":").map(Number);
+    const novaEntrada = new Date(r.data);
+    novaEntrada.setHours(h, m, 0, 0);
+    r.entrada = novaEntrada.getTime();
+  }
+
+  if (saida) {
+    const [h, m] = saida.split(":").map(Number);
+    const novaSaida = new Date(r.data);
+    novaSaida.setHours(h, m, 0, 0);
+    r.saida = novaSaida.getTime();
+  }
+
+  if (r.entrada && r.saida) {
+    const totalMs = r.saida - r.entrada;
+    r.horas = (totalMs / (1000 * 60 * 60)).toFixed(2);
   }
 
   salvar();
@@ -129,8 +144,9 @@ function filtrar() {
 ========================= */
 function exportarExcel() {
   let csv = "Nome,Data,Entrada,Saída,Horas\n";
+
   registros.forEach(r => {
-    csv += `${r.nome},${r.data},${r.entrada},${r.saida},${r.horas}\n`;
+    csv += `${r.nome},${r.data},${new Date(r.entrada).toLocaleTimeString()},${r.saida ? new Date(r.saida).toLocaleTimeString() : ""},${r.horas}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -156,7 +172,7 @@ function exportarPDF() {
 
   registros.forEach(r => {
     doc.text(
-      `${r.nome} | ${r.data} | ${r.entrada} - ${r.saida} | ${r.horas}h`,
+      `${r.nome} | ${r.data} | ${new Date(r.entrada).toLocaleTimeString()} - ${r.saida ? new Date(r.saida).toLocaleTimeString() : ""} | ${r.horas}h`,
       14,
       y
     );
@@ -171,4 +187,12 @@ function exportarPDF() {
   doc.save("controle_ponto.pdf");
 }
 
-carregarTabela();
+/* =========================
+   INIT
+========================= */
+document.addEventListener("DOMContentLoaded", carregarTabela);
+
+   
+    
+
+
