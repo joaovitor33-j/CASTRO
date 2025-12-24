@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Ponto Profissional</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+    <h1>Controle de Ponto</h1>
+
+    <div class="card">
+      <input type="text" id="nome" placeholder="Nome do Funcionário">
+
+      <div class="buttons">
+        <button onclick="registrarEntrada()">Entrada</button>
+        <button class="saida" onclick="registrarSaida()">Saída</button>
+      </div>
+    </div>
+
+    <input
+      type="text"
+      id="filtro"
+      placeholder="Pesquisar por nome..."
+      onkeyup="filtrar()"
+    >
+
+    <div class="buttons export">
+      <button onclick="exportarExcel()">Exportar Excel</button>
+      <button onclick="exportarPDF()">Exportar PDF</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Data</th>
+          <th>Entrada</th>
+          <th>Saída</th>
+          <th>Horas</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela"></tbody>
+    </table>
+  </div>
+
+  <!-- Biblioteca PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
