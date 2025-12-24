@@ -9,34 +9,27 @@ function salvar() {
 }
 
 /* =========================
-   UTIL
+   FORMATAR MINUTOS
 ========================= */
-function horaParaMinutos(hora) {
-  const [h, m] = hora.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function minutosParaHora(min) {
+function formatarMinutos(min) {
   const h = String(Math.floor(min / 60)).padStart(2, "0");
-  const m = String(min % 60).padStart(2, "0");
+  const m = String(min % 60)).padStart(2, "0");
   return `${h}:${m}`;
 }
 
 /* =========================
-   ENTRADA
+   ENTRADA (BATIDA DE PONTO)
 ========================= */
 function registrarEntrada() {
   const nome = document.getElementById("nome").value.trim();
   if (!nome) return alert("Digite o nome");
 
-  const agora = new Date();
-  const hora = agora.toTimeString().slice(0, 5);
+  const agora = Date.now(); // timestamp REAL
 
   registros.push({
     nome,
-    data: agora.toLocaleDateString("pt-BR"),
-    entrada: hora, // HH:MM
-    saida: "",
+    entradaTs: agora, // milissegundos
+    saidaTs: null,
     minutos: 0
   });
 
@@ -44,29 +37,22 @@ function registrarEntrada() {
 }
 
 /* =========================
-   SAÍDA
+   SAÍDA (CALCULA TEMPO REAL)
 ========================= */
 function registrarSaida() {
   const nome = document.getElementById("nome").value.trim();
   if (!nome) return alert("Digite o nome");
 
-  const agora = new Date();
-  const horaSaida = agora.toTimeString().slice(0, 5);
-
   for (let i = registros.length - 1; i >= 0; i--) {
     const r = registros[i];
 
-    if (r.nome === nome && r.saida === "") {
-      r.saida = horaSaida;
+    if (r.nome === nome && r.saidaTs === null) {
+      r.saidaTs = Date.now();
 
-      let total =
-        horaParaMinutos(r.saida) -
-        horaParaMinutos(r.entrada);
+      const diferencaMs = r.saidaTs - r.entradaTs;
+      const minutosTrabalhados = Math.floor(diferencaMs / 60000);
 
-      // virou o dia
-      if (total < 0) total += 1440;
-
-      r.minutos = total;
+      r.minutos = minutosTrabalhados;
 
       salvar();
       return;
@@ -87,12 +73,10 @@ function carregarTabela() {
     tabela.innerHTML += `
       <tr>
         <td>${r.nome}</td>
-        <td>${r.data}</td>
-        <td>${r.entrada}</td>
-        <td>${r.saida}</td>
-        <td>${minutosParaHora(r.minutos)}</td>
-        <td class="acao">
-          <button onclick="editarRegistro(${index})">✏️</button>
+        <td>${new Date(r.entradaTs).toLocaleTimeString()}</td>
+        <td>${r.saidaTs ? new Date(r.saidaTs).toLocaleTimeString() : ""}</td>
+        <td>${formatarMinutos(r.minutos)}</td>
+        <td>
           <button onclick="excluirRegistro(${index})">🗑️</button>
         </td>
       </tr>
@@ -101,57 +85,15 @@ function carregarTabela() {
 }
 
 /* =========================
-   EDITAR
-========================= */
-function editarRegistro(index) {
-  const r = registros[index];
-
-  const entrada = prompt("Entrada (HH:MM):", r.entrada);
-  if (entrada === null) return;
-
-  const saida = prompt("Saída (HH:MM):", r.saida);
-  if (saida === null) return;
-
-  r.entrada = entrada;
-  r.saida = saida;
-
-  let total =
-    horaParaMinutos(saida) -
-    horaParaMinutos(entrada);
-
-  if (total < 0) total += 1440;
-
-  r.minutos = total;
-
-  salvar();
-}
-
-/* =========================
    EXCLUIR
 ========================= */
 function excluirRegistro(index) {
-  if (!confirm("Excluir este registro?")) return;
+  if (!confirm("Excluir registro?")) return;
   registros.splice(index, 1);
   salvar();
-}
-
-/* =========================
-   FILTRO
-========================= */
-function filtrar() {
-  const termo = document.getElementById("filtro").value.toLowerCase();
-  document.querySelectorAll("#tabela tr").forEach(linha => {
-    linha.style.display = linha.innerText.toLowerCase().includes(termo)
-      ? ""
-      : "none";
-  });
 }
 
 /* =========================
    INIT
 ========================= */
 document.addEventListener("DOMContentLoaded", carregarTabela);
-
-
- 
-  
