@@ -1,11 +1,25 @@
 let registros = JSON.parse(localStorage.getItem("ponto")) || [];
 
 /* =========================
-   SALVAR / CARREGAR
+   SALVAR
 ========================= */
 function salvar() {
   localStorage.setItem("ponto", JSON.stringify(registros));
   carregarTabela();
+}
+
+/* =========================
+   UTIL
+========================= */
+function horaParaMinutos(hora) {
+  const [h, m] = hora.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutosParaHora(min) {
+  const h = String(Math.floor(min / 60)).padStart(2, "0");
+  const m = String(min % 60).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 /* =========================
@@ -16,13 +30,14 @@ function registrarEntrada() {
   if (!nome) return alert("Digite o nome");
 
   const agora = new Date();
+  const hora = agora.toTimeString().slice(0, 5);
 
   registros.push({
     nome,
-    data: agora.toISOString().split("T")[0], // yyyy-mm-dd
-    entrada: agora.getTime(), // timestamp
+    data: agora.toLocaleDateString("pt-BR"),
+    entrada: hora, // HH:MM
     saida: "",
-    horas: ""
+    minutos: 0
   });
 
   salvar();
@@ -35,13 +50,23 @@ function registrarSaida() {
   const nome = document.getElementById("nome").value.trim();
   if (!nome) return alert("Digite o nome");
 
-  for (let i = registros.length - 1; i >= 0; i--) {
-    if (registros[i].nome === nome && registros[i].saida === "") {
-      const agora = new Date();
-      registros[i].saida = agora.getTime();
+  const agora = new Date();
+  const horaSaida = agora.toTimeString().slice(0, 5);
 
-      const totalMs = registros[i].saida - registros[i].entrada;
-      registros[i].horas = (totalMs / (1000 * 60 * 60)).toFixed(2);
+  for (let i = registros.length - 1; i >= 0; i--) {
+    const r = registros[i];
+
+    if (r.nome === nome && r.saida === "") {
+      r.saida = horaSaida;
+
+      let total =
+        horaParaMinutos(r.saida) -
+        horaParaMinutos(r.entrada);
+
+      // virou o dia
+      if (total < 0) total += 1440;
+
+      r.minutos = total;
 
       salvar();
       return;
@@ -63,12 +88,12 @@ function carregarTabela() {
       <tr>
         <td>${r.nome}</td>
         <td>${r.data}</td>
-        <td>${new Date(r.entrada).toLocaleTimeString()}</td>
-        <td>${r.saida ? new Date(r.saida).toLocaleTimeString() : ""}</td>
-        <td>${r.horas}</td>
+        <td>${r.entrada}</td>
+        <td>${r.saida}</td>
+        <td>${minutosParaHora(r.minutos)}</td>
         <td class="acao">
-          <button class="editar" onclick="editarRegistro(${index})">✏️</button>
-          <button class="excluir" onclick="excluirRegistro(${index})">🗑️</button>
+          <button onclick="editarRegistro(${index})">✏️</button>
+          <button onclick="excluirRegistro(${index})">🗑️</button>
         </td>
       </tr>
     `;
@@ -81,39 +106,22 @@ function carregarTabela() {
 function editarRegistro(index) {
   const r = registros[index];
 
-  const nome = prompt("Nome:", r.nome);
-  if (nome === null) return;
-
-  const entradaAtual = new Date(r.entrada).toLocaleTimeString().slice(0, 5);
-  const entrada = prompt("Entrada (HH:MM):", entradaAtual);
+  const entrada = prompt("Entrada (HH:MM):", r.entrada);
   if (entrada === null) return;
 
-  const saidaAtual = r.saida
-    ? new Date(r.saida).toLocaleTimeString().slice(0, 5)
-    : "";
-  const saida = prompt("Saída (HH:MM):", saidaAtual);
+  const saida = prompt("Saída (HH:MM):", r.saida);
   if (saida === null) return;
 
-  r.nome = nome;
+  r.entrada = entrada;
+  r.saida = saida;
 
-  if (entrada) {
-    const [h, m] = entrada.split(":").map(Number);
-    const novaEntrada = new Date(r.data);
-    novaEntrada.setHours(h, m, 0, 0);
-    r.entrada = novaEntrada.getTime();
-  }
+  let total =
+    horaParaMinutos(saida) -
+    horaParaMinutos(entrada);
 
-  if (saida) {
-    const [h, m] = saida.split(":").map(Number);
-    const novaSaida = new Date(r.data);
-    novaSaida.setHours(h, m, 0, 0);
-    r.saida = novaSaida.getTime();
-  }
+  if (total < 0) total += 1440;
 
-  if (r.entrada && r.saida) {
-    const totalMs = r.saida - r.entrada;
-    r.horas = (totalMs / (1000 * 60 * 60)).toFixed(2);
-  }
+  r.minutos = total;
 
   salvar();
 }
@@ -122,7 +130,7 @@ function editarRegistro(index) {
    EXCLUIR
 ========================= */
 function excluirRegistro(index) {
-  if (!confirm("Deseja excluir este registro?")) return;
+  if (!confirm("Excluir este registro?")) return;
   registros.splice(index, 1);
   salvar();
 }
@@ -140,59 +148,10 @@ function filtrar() {
 }
 
 /* =========================
-   EXPORTAR EXCEL
-========================= */
-function exportarExcel() {
-  let csv = "Nome,Data,Entrada,Saída,Horas\n";
-
-  registros.forEach(r => {
-    csv += `${r.nome},${r.data},${new Date(r.entrada).toLocaleTimeString()},${r.saida ? new Date(r.saida).toLocaleTimeString() : ""},${r.horas}\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "controle_ponto.csv";
-  a.click();
-}
-
-/* =========================
-   EXPORTAR PDF
-========================= */
-function exportarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.text("Relatório de Controle de Ponto", 14, 15);
-
-  let y = 30;
-  doc.setFontSize(10);
-
-  registros.forEach(r => {
-    doc.text(
-      `${r.nome} | ${r.data} | ${new Date(r.entrada).toLocaleTimeString()} - ${r.saida ? new Date(r.saida).toLocaleTimeString() : ""} | ${r.horas}h`,
-      14,
-      y
-    );
-    y += 8;
-
-    if (y > 280) {
-      doc.addPage();
-      y = 20;
-    }
-  });
-
-  doc.save("controle_ponto.pdf");
-}
-
-/* =========================
    INIT
 ========================= */
 document.addEventListener("DOMContentLoaded", carregarTabela);
 
-   
-    
 
-
+ 
+  
