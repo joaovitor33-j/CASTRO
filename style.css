@@ -1,0 +1,94 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #e5e7eb;
+}
+
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  background: #f8fafc;
+  padding: 25px;
+  border-radius: 8px;
+}
+
+h1 {
+  text-align: center;
+  color: #1e3a8a;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #e2e8f0;
+  padding: 20px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  flex: 1;
+  padding: 10px;
+  background: #2563eb;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+button.saida {
+  background: #dc2626;
+}
+
+.export {
+  margin: 15px 0;
+}
+
+.export button {
+  background: #0f766e;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #cbd5f5;
+  text-align: center;
+}
+
+th {
+  background: #1e40af;
+  color: #fff;
+}
+
+.acao {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.editar {
+  background: #f59e0b;
+}
+
+.excluir {
+  background: #dc2626;
+}
